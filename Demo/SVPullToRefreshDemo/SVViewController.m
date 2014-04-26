@@ -22,18 +22,45 @@
     [super viewDidLoad];
     [self setupDataSource];
     
+    //set the order in which the pull-to-refresh and infiniteScrolling controls will be set-up
+    self.controlsInverseOrder = NO;
+    
+    [self setUpPullToRefreshAndInfiniteScrolling];
+    
+
+}
+
+- (void)setUpPullToRefreshAndInfiniteScrolling {
+    
     __weak SVViewController *weakSelf = self;
     
-    // setup pull-to-refresh
-    [self.tableView addPullToRefreshWithActionHandler:^{
-        [weakSelf insertRowAtTop];
-    }];
+    if (self.controlsInverseOrder) { //inverse order (infinite scrolling: Top, pull-to-refresh: Bottom)
         
-    // setup infinite scrolling
-    [self.tableView addInfiniteScrollingWithActionHandler:^{
-        [weakSelf insertRowAtBottom];
-    }];
+        // setup pull-to-refresh
+        [self.tableView addPullToRefreshWithActionHandler:^{
+            [weakSelf insertRowAtBottom];
+        } position:SVPullToRefreshPositionBottom];
+        
+        // setup infinite scrolling
+        [self.tableView addInfiniteScrollingWithActionHandler:^{
+            [weakSelf insertRowAtTop];
+        } position:SVInfiniteScrollingPositionTop];
+        
+    }else{ //normal order (infinite scrolling: Bottom, pull-to-refresh: Top)
+
+        // setup pull-to-refresh
+        [self.tableView addPullToRefreshWithActionHandler:^{
+            [weakSelf insertRowAtTop];
+        } position:SVPullToRefreshPositionTop];
+        
+        // setup infinite scrolling
+        [self.tableView addInfiniteScrollingWithActionHandler:^{
+            [weakSelf insertRowAtBottom];
+        } position:SVInfiniteScrollingPositionBottom];
+        
+    }
 }
+
 
 - (void)viewDidAppear:(BOOL)animated {
     [tableView triggerPullToRefresh];
@@ -59,6 +86,8 @@
         [weakSelf.tableView endUpdates];
         
         [weakSelf.tableView.pullToRefreshView stopAnimating];
+        [weakSelf.tableView.infiniteScrollingView stopAnimating];
+
     });
 }
 
@@ -74,6 +103,7 @@
         [weakSelf.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:weakSelf.dataSource.count-1 inSection:0]] withRowAnimation:UITableViewRowAnimationTop];
         [weakSelf.tableView endUpdates];
         
+        [weakSelf.tableView.pullToRefreshView stopAnimating];
         [weakSelf.tableView.infiniteScrollingView stopAnimating];
     });
 }

@@ -12,4 +12,7 @@
 
 @property (nonatomic, strong) IBOutlet UITableView *tableView;
 
+//determines if the pull-to-refresh and infiniteScrolling controls are in their natural order (pullToRefresh on the top and InfiniteScrolling from the Bottom) or vice-versa (reverse order)
+@property(nonatomic, assign) BOOL controlsInverseOrder;
+
 @end
