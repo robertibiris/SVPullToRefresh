@@ -29,7 +29,7 @@ static CGFloat const SVInfiniteScrollingViewHeight = 60;
 @property (nonatomic, readwrite) SVInfiniteScrollingState state;
 @property (nonatomic, strong) NSMutableArray *viewForState;
 @property (nonatomic, weak) UIScrollView *scrollView;
-@property (nonatomic, readwrite) CGFloat originalBottomInset;
+@property (nonatomic, readwrite) CGFloat originalPositionInset;
 @property (nonatomic, assign) BOOL wasTriggeredByUser;
 @property (nonatomic, assign) BOOL isObserving;
 
@@ -73,12 +73,26 @@ UIEdgeInsets scrollViewOriginalContentInsets;
                 return;
         }
         
-        SVInfiniteScrollingView *view = [[SVInfiniteScrollingView alloc] initWithFrame:CGRectMake(0, yOrigin, self.bounds.size.width, SVInfiniteScrollingViewHeight)];
+        SVInfiniteScrollingView *view = [[SVInfiniteScrollingView alloc] initWithFrame:CGRectMake(0, yOrigin, self.bounds.size.width, SVInfiniteScrollingViewHeight) position:position];
         view.infiniteScrollingHandler = actionHandler;
         view.scrollView = self;
         [self addSubview:view];
+        CGFloat positionInset;
+        switch (position) {
+            case SVInfiniteScrollingPositionBottom:
+                positionInset = self.contentInset.bottom;
+                break;
+                
+            case SVInfiniteScrollingPositionTop:
+                positionInset = self.contentInset.top;
+                break;
+                
+            default:
+                NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+                break;
+        }
         
-        view.originalBottomInset = self.contentInset.bottom;
+        view.originalPositionInset = positionInset;
         self.infiniteScrollingView = view;
         self.showsInfiniteScrolling = YES;
     }
@@ -133,6 +147,12 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 
 
 #pragma mark - SVInfiniteScrollingView
+@interface SVInfiniteScrollingView ()
+
+@property (nonatomic, readwrite) SVInfiniteScrollingPosition position;
+
+@end
+
 @implementation SVInfiniteScrollingView
 
 // public properties
@@ -142,20 +162,44 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 @synthesize scrollView = _scrollView;
 @synthesize activityIndicatorView = _activityIndicatorView;
 
-
-- (id)initWithFrame:(CGRect)frame {
+// DESIGNATED INITIALIZER
+- (id)initWithFrame:(CGRect)frame position:(SVInfiniteScrollingPosition)position
+{
     if(self = [super initWithFrame:frame]) {
-        
-        // default styling values
-        self.activityIndicatorViewStyle = UIActivityIndicatorViewStyleGray;
-        self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        self.state = SVInfiniteScrollingStateStopped;
-        self.enabled = YES;
-        
-        self.viewForState = [NSMutableArray arrayWithObjects:@"", @"", @"", @"", nil];
+        [self setUpWithPosition:position];
     }
     
     return self;
+}
+
+//???: SHOULD WE KEEP THIS? OR JUST LEAVE THE DESIGNATED INITIALIZER?
+-(id)initWithFrame:(CGRect)frame
+{
+    if(self = [super initWithFrame:frame]) {
+        //if designated initializer is not used, position is arbitrarily set to Bottom
+        [self setUpWithPosition:SVInfiniteScrollingPositionBottom];
+    }
+    
+    return self;
+}
+
+/**
+ *  Basic set-up for initilizing the View
+ *
+ *  @param position the SVInfiniteScrollingPosition to be set for the View (Bottom or Top).
+ */
+-(void)setUpWithPosition:(SVInfiniteScrollingPosition)position
+{
+    //set position
+    self.position = position;
+    
+    // default styling values
+    self.activityIndicatorViewStyle = UIActivityIndicatorViewStyleGray;
+    self.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    self.state = SVInfiniteScrollingStateStopped;
+    self.enabled = YES;
+    
+    self.viewForState = [NSMutableArray arrayWithObjects:@"", @"", @"", @"", nil];
 }
 
 - (void)willMoveToSuperview:(UIView *)newSuperview {
@@ -178,14 +222,43 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 #pragma mark - Scroll View
 
 - (void)resetScrollViewContentInset {
+    
     UIEdgeInsets currentInsets = self.scrollView.contentInset;
-    currentInsets.bottom = self.originalBottomInset;
+    
+    switch (self.position) {
+        case SVInfiniteScrollingPositionBottom:
+            currentInsets.bottom = self.originalPositionInset;
+            break;
+            
+        case SVInfiniteScrollingPositionTop:
+            currentInsets.top = self.originalPositionInset;
+            break;
+            
+        default:
+            NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+            break;
+    }
+    
     [self setScrollViewContentInset:currentInsets];
 }
 
 - (void)setScrollViewContentInsetForInfiniteScrolling {
     UIEdgeInsets currentInsets = self.scrollView.contentInset;
-    currentInsets.bottom = self.originalBottomInset + SVInfiniteScrollingViewHeight;
+    
+    switch (self.position) {
+        case SVInfiniteScrollingPositionBottom:
+            currentInsets.bottom = self.originalPositionInset + SVInfiniteScrollingViewHeight;
+            break;
+            
+        case SVInfiniteScrollingPositionTop:
+            currentInsets.top = self.originalPositionInset + SVInfiniteScrollingViewHeight;
+            break;
+            
+        default:
+            NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+            break;
+    }
+    
     [self setScrollViewContentInset:currentInsets];
 }
 
@@ -206,21 +279,67 @@ UIEdgeInsets scrollViewOriginalContentInsets;
         [self scrollViewDidScroll:[[change valueForKey:NSKeyValueChangeNewKey] CGPointValue]];
     else if([keyPath isEqualToString:@"contentSize"]) {
         [self layoutSubviews];
-        self.frame = CGRectMake(0, self.scrollView.contentSize.height, self.bounds.size.width, SVInfiniteScrollingViewHeight);
+        
+        switch (self.position) {
+            case SVInfiniteScrollingPositionBottom:
+                self.frame = CGRectMake(0, self.scrollView.contentSize.height, self.bounds.size.width, SVInfiniteScrollingViewHeight);
+                break;
+                
+            case SVInfiniteScrollingPositionTop:
+                self.frame = CGRectMake(0, -SVInfiniteScrollingViewHeight, self.bounds.size.width, SVInfiniteScrollingViewHeight);
+                break;
+                
+            default:
+                NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+                break;
+        }
+
+        
+        
     }
 }
 
+
 - (void)scrollViewDidScroll:(CGPoint)contentOffset {
+    
     if(self.state != SVInfiniteScrollingStateLoading && self.enabled) {
-        CGFloat scrollViewContentHeight = self.scrollView.contentSize.height;
-        CGFloat scrollOffsetThreshold = scrollViewContentHeight-self.scrollView.bounds.size.height;
-        
-        if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
-            self.state = SVInfiniteScrollingStateLoading;
-        else if(contentOffset.y > scrollOffsetThreshold && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
-            self.state = SVInfiniteScrollingStateTriggered;
-        else if(contentOffset.y < scrollOffsetThreshold  && self.state != SVInfiniteScrollingStateStopped)
-            self.state = SVInfiniteScrollingStateStopped;
+        //handle state transition
+        [self handleStateTransitionOnScrollingWithContentOffset:contentOffset];
+    }
+}
+
+- (void)handleStateTransitionOnScrollingWithContentOffset:(CGPoint)contentOffset {
+    
+    CGFloat scrollViewContentHeight = self.scrollView.contentSize.height;
+    //for Top position, the threshhold to evaluate is 0. For Bottom position, we calculate it as:
+    CGFloat scrollOffsetThreshold = scrollViewContentHeight-self.scrollView.bounds.size.height;
+    
+    switch (self.position) {
+        case SVInfiniteScrollingPositionBottom:
+            
+            if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
+                self.state = SVInfiniteScrollingStateLoading;
+            else if(contentOffset.y > scrollOffsetThreshold && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
+                self.state = SVInfiniteScrollingStateTriggered;
+            else if(contentOffset.y < scrollOffsetThreshold  && self.state != SVInfiniteScrollingStateStopped)
+                self.state = SVInfiniteScrollingStateStopped;
+            
+            break;
+            
+        case SVInfiniteScrollingPositionTop:
+            
+            if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
+                self.state = SVInfiniteScrollingStateLoading;
+            else if(contentOffset.y < 0 && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
+                self.state = SVInfiniteScrollingStateTriggered;
+            else if(contentOffset.y > 0  && self.state != SVInfiniteScrollingStateStopped)
+                self.state = SVInfiniteScrollingStateStopped;
+            
+            break;
+            
+        default:
+            NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+            break;
     }
 }
 
@@ -318,6 +437,25 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     
     if(previousState == SVInfiniteScrollingStateTriggered && newState == SVInfiniteScrollingStateLoading && self.infiniteScrollingHandler && self.enabled)
         self.infiniteScrollingHandler();
+}
+
+#pragma mark - Utilities
+
+-(void)onPositionValue:(SVInfiniteScrollingPosition)position performBlockOnPositionTopValue:(void(^)(void))onTopBlock performBlockOnPositionBottomValue:(void(^)(void))onBottomBlock
+{
+    switch (position) {
+        case SVInfiniteScrollingPositionBottom:
+            onTopBlock();
+            break;
+            
+        case SVInfiniteScrollingPositionTop:
+            onBottomBlock();
+            break;
+            
+        default:
+            NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
+            break;
+    }
 }
 
 @end

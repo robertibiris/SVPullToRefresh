@@ -44,6 +44,10 @@ typedef NSUInteger SVInfiniteScrollingState;
 @property (nonatomic, readonly) SVInfiniteScrollingPosition position;
 @property (nonatomic, readwrite) BOOL enabled;
 
+//Designated initializer
+- (id)initWithFrame:(CGRect)frame position:(SVInfiniteScrollingPosition)position;
+
+
 - (void)setCustomView:(UIView *)view forState:(SVInfiniteScrollingState)state;
 
 - (void)startAnimating;
