@@ -51,10 +51,29 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 
 @dynamic infiniteScrollingView;
 
-- (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler {
-    
+- (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler
+{
+//    default behavior is to set-up infinite scrolling at the bottom of the UIScrollView
+    [self addInfiniteScrollingWithActionHandler:actionHandler position:SVInfiniteScrollingPositionBottom];
+}
+
+- (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler position:(SVInfiniteScrollingPosition)position
+{
     if(!self.infiniteScrollingView) {
-        SVInfiniteScrollingView *view = [[SVInfiniteScrollingView alloc] initWithFrame:CGRectMake(0, self.contentSize.height, self.bounds.size.width, SVInfiniteScrollingViewHeight)];
+//        depending on provided position, place the view accordingly
+        CGFloat yOrigin;
+        switch (position) {
+            case SVInfiniteScrollingPositionTop:
+                yOrigin = -SVInfiniteScrollingViewHeight;
+                break;
+            case SVInfiniteScrollingPositionBottom:
+                yOrigin = self.contentSize.height;
+                break;
+            default:
+                return;
+        }
+        
+        SVInfiniteScrollingView *view = [[SVInfiniteScrollingView alloc] initWithFrame:CGRectMake(0, yOrigin, self.bounds.size.width, SVInfiniteScrollingViewHeight)];
         view.infiniteScrollingHandler = actionHandler;
         view.scrollView = self;
         [self addSubview:view];
