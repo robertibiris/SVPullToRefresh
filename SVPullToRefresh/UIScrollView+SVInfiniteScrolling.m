@@ -280,20 +280,11 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     else if([keyPath isEqualToString:@"contentSize"]) {
         [self layoutSubviews];
         
-        switch (self.position) {
-            case SVInfiniteScrollingPositionBottom:
-                self.frame = CGRectMake(0, self.scrollView.contentSize.height, self.bounds.size.width, SVInfiniteScrollingViewHeight);
-                break;
-                
-            case SVInfiniteScrollingPositionTop:
-                self.frame = CGRectMake(0, -SVInfiniteScrollingViewHeight, self.bounds.size.width, SVInfiniteScrollingViewHeight);
-                break;
-                
-            default:
-                NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
-                break;
-        }
-
+        [self onPositionValue:self.position performBlockOnPositionTopValue:^{
+            self.frame = CGRectMake(0, -SVInfiniteScrollingViewHeight, self.bounds.size.width, SVInfiniteScrollingViewHeight);
+        } performBlockOnPositionBottomValue:^{
+            self.frame = CGRectMake(0, self.scrollView.contentSize.height, self.bounds.size.width, SVInfiniteScrollingViewHeight);
+        }];
         
         
     }
@@ -314,33 +305,25 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     //for Top position, the threshhold to evaluate is 0. For Bottom position, we calculate it as:
     CGFloat scrollOffsetThreshold = scrollViewContentHeight-self.scrollView.bounds.size.height;
     
-    switch (self.position) {
-        case SVInfiniteScrollingPositionBottom:
-            
-            if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
-                self.state = SVInfiniteScrollingStateLoading;
-            else if(contentOffset.y > scrollOffsetThreshold && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
-                self.state = SVInfiniteScrollingStateTriggered;
-            else if(contentOffset.y < scrollOffsetThreshold  && self.state != SVInfiniteScrollingStateStopped)
-                self.state = SVInfiniteScrollingStateStopped;
-            
-            break;
-            
-        case SVInfiniteScrollingPositionTop:
-            
-            if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
-                self.state = SVInfiniteScrollingStateLoading;
-            else if(contentOffset.y < 0 && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
-                self.state = SVInfiniteScrollingStateTriggered;
-            else if(contentOffset.y > 0  && self.state != SVInfiniteScrollingStateStopped)
-                self.state = SVInfiniteScrollingStateStopped;
-            
-            break;
-            
-        default:
-            NSAssert(0, @"current position was not set to a valid value (accepted values: SVInfiniteScrollingPositionBottom | SVInfiniteScrollingPositionTop)");
-            break;
-    }
+    [self onPositionValue:self.position performBlockOnPositionTopValue:^{
+        
+        if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
+            self.state = SVInfiniteScrollingStateLoading;
+        else if(contentOffset.y < 0 && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
+            self.state = SVInfiniteScrollingStateTriggered;
+        else if(contentOffset.y > 0  && self.state != SVInfiniteScrollingStateStopped)
+            self.state = SVInfiniteScrollingStateStopped;
+        
+    } performBlockOnPositionBottomValue:^{
+        
+        if(!self.scrollView.isDragging && self.state == SVInfiniteScrollingStateTriggered)
+            self.state = SVInfiniteScrollingStateLoading;
+        else if(contentOffset.y > scrollOffsetThreshold && self.state == SVInfiniteScrollingStateStopped && self.scrollView.isDragging)
+            self.state = SVInfiniteScrollingStateTriggered;
+        else if(contentOffset.y < scrollOffsetThreshold  && self.state != SVInfiniteScrollingStateStopped)
+            self.state = SVInfiniteScrollingStateStopped;
+    }];
+    
 }
 
 #pragma mark - Getters
@@ -444,11 +427,11 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 -(void)onPositionValue:(SVInfiniteScrollingPosition)position performBlockOnPositionTopValue:(void(^)(void))onTopBlock performBlockOnPositionBottomValue:(void(^)(void))onBottomBlock
 {
     switch (position) {
-        case SVInfiniteScrollingPositionBottom:
+        case SVInfiniteScrollingPositionTop:
             onTopBlock();
             break;
             
-        case SVInfiniteScrollingPositionTop:
+        case SVInfiniteScrollingPositionBottom:
             onBottomBlock();
             break;
             
