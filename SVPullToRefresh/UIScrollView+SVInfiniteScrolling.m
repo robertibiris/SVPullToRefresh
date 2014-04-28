@@ -51,16 +51,27 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 
 @dynamic infiniteScrollingView;
 
+/**
+ *  Adds Infinite Scrolling to the UIScrollView. By default, it is added at the Bottom of the UIScrollView.
+ *
+ *  @param actionHandler the block to execute whenever infinite Scrolling is triggered.
+ */
 - (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler
 {
 //    default behavior is to set-up infinite scrolling at the bottom of the UIScrollView
     [self addInfiniteScrollingWithActionHandler:actionHandler position:SVInfiniteScrollingPositionBottom];
 }
 
+/**
+ *  Adds Infinite Scrolling to the UIScrollView at the provided SVInfiniteScrollingPosition.
+ *
+ *  @param actionHandler the block to execute whenever infinite Scrolling is triggered.
+ *  @param position      the SVInfiniteScrollingPosition value, referring to the Top/Bottom of the ScrollView.
+ */
 - (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler position:(SVInfiniteScrollingPosition)position
 {
     if(!self.infiniteScrollingView) {
-//        depending on provided position, place the view accordingly
+//        depending on provided position, place the InfiniteScrollingView accordingly
         CGFloat yOrigin;
         switch (position) {
             case SVInfiniteScrollingPositionTop:
@@ -424,6 +435,12 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 
 #pragma mark - Utilities
 
+/**
+ *  Executes the provided blocks depending on the SVInfiniteScrollingPosition provided. It will also assert that the position value provided is Valid
+ *  @param position      teh SVInfiniteScrollingPosition value from which to determine whick block to execute
+ *  @param onTopBlock    block to ececute on position value SVInfiniteScrollingPositionTop
+ *  @param onBottomBlock block to ececute on position value SVInfiniteScrollingPositionBottom
+ */
 -(void)onPositionValue:(SVInfiniteScrollingPosition)position performBlockOnPositionTopValue:(void(^)(void))onTopBlock performBlockOnPositionBottomValue:(void(^)(void))onBottomBlock
 {
     switch (position) {
