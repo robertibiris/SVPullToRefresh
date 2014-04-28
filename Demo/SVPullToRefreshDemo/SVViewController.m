@@ -23,7 +23,7 @@
     [self setupDataSource];
     
     //set the order in which the pull-to-refresh and infiniteScrolling controls will be set-up
-    self.controlsInverseOrder = NO;
+    self.controlsInverseOrder = YES;
     
     [self setUpPullToRefreshAndInfiniteScrolling];
     
@@ -85,8 +85,13 @@
         [weakSelf.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:0]] withRowAnimation:UITableViewRowAnimationBottom];
         [weakSelf.tableView endUpdates];
         
-        [weakSelf.tableView.pullToRefreshView stopAnimating];
-        [weakSelf.tableView.infiniteScrollingView stopAnimating];
+        //stop animation for the appropriate control
+        if (self.controlsInverseOrder) {
+            [weakSelf.tableView.infiniteScrollingView stopAnimating];
+
+        }else{
+            [weakSelf.tableView.pullToRefreshView stopAnimating];
+        }
 
     });
 }
@@ -103,10 +108,17 @@
         [weakSelf.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:weakSelf.dataSource.count-1 inSection:0]] withRowAnimation:UITableViewRowAnimationTop];
         [weakSelf.tableView endUpdates];
         
-        [weakSelf.tableView.pullToRefreshView stopAnimating];
-        [weakSelf.tableView.infiniteScrollingView stopAnimating];
+        //stop animation for the appropriate control
+        if (self.controlsInverseOrder) {
+            [weakSelf.tableView.pullToRefreshView stopAnimating];
+            
+        }else{
+            [weakSelf.tableView.infiniteScrollingView stopAnimating];
+        }
+        
     });
 }
+
 #pragma mark -
 #pragma mark UITableViewDataSource
 
