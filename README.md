@@ -85,6 +85,14 @@ tableView.pullToRefreshView.arrowColor = [UIColor whiteColor];
     // call [tableView.infiniteScrollingView stopAnimating] when done
 }];
 ```
+or if you want infinite scrolling from the Top
+
+```objective-c
+[tableView addInfiniteScrollingWithActionHandler:^{
+    // append data to data source, insert new cells at the end of table view
+    // call [tableView.infiniteScrollingView stopAnimating] when done
+} position:SVInfiniteScrollingPositionTop];
+```
 
 If you’d like to programmatically trigger the loading (for instance in `viewDidAppear:`), you can do so with:
 
